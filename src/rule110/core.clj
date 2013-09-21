@@ -42,4 +42,5 @@
   (reduce (fn [s v] (-> s step draw-grid midi/play-grid))
           (random-grid 100 25)
           (range 250))
+  (midi/stop)
   nil)
