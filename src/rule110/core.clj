@@ -1,5 +1,6 @@
 (ns rule110.core
-  (:require [rule110.midi :as midi]))
+  (:require [rule110.midi :as midi]
+            [rule110.graphics :as graphics]))
 
 (def grid-size 1024 )
 (def max-steps 100)
@@ -39,7 +40,7 @@
 
 (defn -main
   [& args]
-  (reduce (fn [s v] (-> s step draw-grid midi/play-grid))
+  (reduce (fn [s v] (-> s step #_draw-grid graphics/draw-frame midi/play-grid))
           (random-grid 100 25)
           (range 250))
   (midi/stop)

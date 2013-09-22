@@ -2,17 +2,17 @@
   (:import (javax.sound.midi MidiSystem Synthesizer MidiChannel)))
 
 (set! *warn-on-reflection* true)
-(def synth (javax.sound.midi.MidiSystem/getSynthesizer))
+(def synth (MidiSystem/getSynthesizer))
 
 (defn start
   "Start up the sythnesizer"
   []
-  (.open ^javax.sound.midi.Synthesizer synth))
+  (.open ^Synthesizer synth))
 
 (defn stop
   "Stop and cleanup the sythnesizer"
   []
-  (.close ^javax.sound.midi.Synthesizer synth))
+  (.close ^Synthesizer synth))
 
 
 
