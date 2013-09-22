@@ -14,8 +14,37 @@
   []
   (.close ^javax.sound.midi.Synthesizer synth))
 
+
+
+(defn set-instrument
+  [channels channel-number instrument-num]
+  (let [inst (aget (.getAvailableInstruments ^Synthesizer synth)
+                   instrument-num)]
+    (.programChange (aget channels channel-number)
+
+                    (.getProgram (.getPatch inst)))))
+
+;; (def instruments [[0 108] ; kalimba
+;;                   [1 114] ; steel drums
+;;                   [2 116] ; taiko
+;;                   [3 118] ; Syn Drum
+;;                   [4 238]]) ; Tuned Drum
+
+(def instruments [[0 116] ; kalimba
+                  [1 116] ; steel drums
+                  [2 116] ; taiko
+                  [3 116] ; Syn Drum
+                  [4 238] ; Tuned Drum
+                  [5 116]
+                  [6 116]
+                  ])
+
 (def channels (delay (start)
-                     (.getChannels ^javax.sound.midi.Synthesizer synth)))
+                     (let [chans (.getChannels ^javax.sound.midi.Synthesizer synth)]
+                       (doseq [[chan-num inst] instruments]
+                         (set-instrument chans chan-num inst))
+                       chans
+                       )))
 
 (defn play-note
   "Play a note on channel with note and velocity"
@@ -44,12 +73,20 @@
 ;; 0-15 channels and but 129 notes but not all play on a channel
 ;; channel 10 has lots of game like sounds 10-80
 ;; channel 12 has drum/bell stay less than 80 though
-(def max-channels 4)
-(def idx-channel-map {
-                      0 0
-                      1 10
-                      2 12
-                      3 15})
+;; (def max-channels 8)
+;; (def idx-channel-map {
+;;                       0 0
+;;                       1 10
+;;                       2 12
+;;                       3 15
+;;                       4 2
+;;                       5 14
+;;                       6 8
+;;                       7 4})
+
+(def max-channels (count instruments))
+(def idx-channel-map (fn [n] n))
+
 
 (defn default-note-fn
   [grid]
@@ -57,7 +94,8 @@
     (map
      (fn [[a b c d :as rows] idx]
        (let [channel-number (idx-channel-map (mod idx max-channels))
-             sum (int (Math/pow (apply + rows) (inc idx)))
+             osum (int (Math/pow (apply + rows) (inc idx)))
+             sum (Integer/parseInt (apply str rows) 2)
              #_( mults (map #(int (Math/pow * %2 %2)) (partition max-channels)))
              note (mod sum 129)
              velocity (min 100 (max 10 (mod sum 100)))]
