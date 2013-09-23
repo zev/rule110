@@ -1,21 +1,26 @@
 (ns rule110.core
-  (:require [rule110.midi :as midi]
+  (:require [rule110.constants :as const]
+            [rule110.midi :as midi]
             [rule110.graphics :as graphics]))
 
-(def grid-size 1024 )
-(def max-steps 100)
 
 
+;; A list of all the possible states a cell and it's immediate
+;; neighbors can be in
 (def rule-states [[1 1 1] [1 1 0] [1 0 1] [1 0 0] [0 1 1] [0 1 0] [0 0 1] [0 0 0]])
 
-(defn pad
+(defn- pad
+  "Pad out the binary string to include the prefixed 0s"
   [n]
   (let [l (- 8 (count n))]
     (if (zero? l)
       n
       (str (apply str (mapv (constantly "0") (range l))) n))))
 
+
 (defn all-possible-rules
+  "Return a list of rule number and step-fn's for all possible cellular automata
+   in the domain of rule 110 i.e. 1 dimensional automaton"
   []
   (map (fn [n]
          [n (apply hash-map
@@ -25,8 +30,8 @@
        (range 256)))
 
 
-;; ;; rule 110
-;; (def step-rule {
+;; rule 110 for refernce
+;; (def step-fn {
 ;;                 [1 1 1] 0,
 ;;                 [1 1 0] 1,
 ;;                 [1 0 1] 1,
@@ -37,35 +42,12 @@
 ;;                 [0 0 0] 0
 ;;                 })
 
-;; (def step-rule {
-;;                 [1 1 1] 0,
-;;                 [1 1 0] 1,
-;;                 [1 0 1] 0,
-;;                 [1 0 0] 0,
-;;                 [0 1 1] 1,
-;;                 [0 1 0] 0,
-;;                 [0 0 1] 1,
-;;                 [0 0 0] 1
-;;                 })
-
-;; (def step-rule {
-;;                 [1 1 1] 1,
-;;                 [1 1 0] 0,
-;;                 [1 0 1] 0,
-;;                 [1 0 0] 1,
-;;                 [0 1 1] 0,
-;;                 [0 1 0] 1,
-;;                 [0 0 1] 1,
-;;                 [0 0 0] 1
-;;                 })
-
-(def step-rule (atom {}))
 
 (defn step
   "Apply the rule to each cell in the grid and return a new grid"
-  [grid]
+  [grid step-fn]
   (let [torus (concat [(last grid)] grid [(first grid)])]
-    (map @step-rule (partition 3 1 torus))))
+    (map step-fn (partition 3 1 torus))))
 
 
 (defn random-grid
@@ -83,27 +65,40 @@
   (println "")
   grid)
 
+(defn- rule-and-grid-name
+  "Return a string of the rule and starting grid state for use in
+   titles or file names"
+  [rule-num grid ]
+  (str rule-num "-g" (.toString (BigInteger. (apply str grid) 2) 16)))
+
+
 (defn run-rule
-  ( [rule-num]
-      (run-rule rule-num (random-grid 100 25))
-      )
-  ( [rule-num grid]
-      (reset! graphics/rule-name (str rule-num "-g" (str (BigInteger. (apply str grid) 2))))
-      (reduce (fn [s v] (-> s step #_draw-grid graphics/draw-frame #_midi/play-grid))
+  "Runs a celular automata based on the passed step-fn passed
+   rule-num is just the name of the rule
+   step-fn takes a grid and returns a new grid based on the automata rules.
+   grid is the state of the starting automata."
+  ([rule-num step-fn]
+     (run-rule rule-num step-fn (random-grid const/grid-size 25)))
+
+  ([rule-num step-fn grid]
+      (reset! graphics/rule-name (rule-and-grid-name rule-num grid))
+      (reduce (fn [s v] (-> s
+                           (step step-fn)
+                           #_draw-grid
+                           graphics/draw-frame
+                           #_midi/play-grid))
               grid
-              (range 250))
-      (Thread/sleep 200)
-      (graphics/reset-frame)))
+              (range const/max-steps))
+      (Thread/sleep 100)
+      (graphics/reset)))
 
 
 (defn -main
   [& args]
-  (let [grid (random-grid 100 25)]
+  (let [grid (random-grid const/grid-size 25)]
     (prn "starting grid " grid)
-    #_(prn "all rules " (all-possible-rules))
     (doseq [ [rule-num rule-map] (all-possible-rules)]
       (prn "rule -num " rule-num " map " rule-map)
-      (reset! step-rule rule-map)
-      (run-rule rule-num grid)))
+      (run-rule rule-num rule-map grid)))
   (midi/stop)
   nil)

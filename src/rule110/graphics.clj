@@ -1,4 +1,5 @@
 (ns rule110.graphics
+  (:require [rule110.constants :as const])
   (:import (java.awt Color Graphics Dimension)
            (java.awt.image BufferedImage)
            (javax.swing JPanel JFrame)
@@ -7,13 +8,15 @@
 
 (set! *warn-on-reflection* true)
 
-
-(def dim-board   [100  250])
+(def dim-board   [const/grid-size const/max-steps])
 (def dim-screen  [1000  750])
 (def dim-scale   (mapv / dim-screen dim-board))
+
+;; a place holder to keep track of the currently running rule for
+;; output to a file and title windows
 (def rule-name (atom ""))
 
-(def current-row (atom 0))
+;; A place to holder the progression of the automata
 (def board (atom []))
 
 (def on-color java.awt.Color/GREEN)
@@ -24,16 +27,22 @@
     (for [[col-idx val] (map-indexed vector row)]
       [val col-idx row-idx])))
 
-
 (defn render-cell [^Graphics g cell]
   (let [[state xo yo] cell
         [x-scale y-scale] dim-scale
-        x #_(inc) (* xo x-scale)
-        y #_(inc) (* yo y-scale)]
-    #_(prn "X " x " y " y " NX " x " NY " y)
+        x (* xo x-scale)
+        y (* yo y-scale)]
     (doto g
       (.setColor (if (= 1 state) on-color off-color))
-      (.fillRect x y x-scale #_(dec x-scale) #_(dec y-scale) y-scale))))
+      (.fillRect x y x-scale y-scale))))
+
+(defn write-img-to-file
+  "Write the current image to a file"
+  [img]
+  (let [filename (str "./rules/output_" @rule-name ".png")]
+    (prn "writing image to " filename)
+    (ImageIO/write img "png" (File. filename))
+    (Thread/sleep 100)))
 
 (defn render [graphics img board]
   (let [background-graphics (.getGraphics img)]
@@ -44,11 +53,8 @@
             cell row]
       (render-cell background-graphics cell))
     (.drawImage graphics img 0 0 nil))
-  (when (= 250 (count board))
-    (prn "writing image")
-    (ImageIO/write img "png" (File. (str "./rules/output_" @rule-name ".png")))
-    (Thread/sleep 200)))
-
+  (when (= const/max-steps (count board))
+    (write-img-to-file img)))
 
 
 (def ^JPanel panel
@@ -60,18 +66,22 @@
                           screen-x
                           screen-y)))))
 
-(def frame (doto (JFrame.) (.add panel)
-                 .pack .show
-                 (.setDefaultCloseOperation javax.swing.JFrame/DISPOSE_ON_CLOSE)))
+(def frame (doto (JFrame.)
+             (.add panel)
+             .pack .show
+             (.setTitle "Cellular Automata")
+             (.setDefaultCloseOperation javax.swing.JFrame/DISPOSE_ON_CLOSE)))
 
 (defn draw-frame
+  "Draw the state of the current automata's grid"
   [grid]
-  (swap! board conj grid)
-  (.repaint panel)
   (when (zero? (count @board))
     (.setTitle frame @rule-name))
+  (swap! board conj grid)
+  (.repaint panel)
   grid)
 
-(defn reset-frame
+(defn reset
+  "Reset the screen for a fresh drawing"
   []
   (reset! board []))
