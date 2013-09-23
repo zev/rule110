@@ -89,7 +89,7 @@
                            #_midi/play-grid))
               grid
               (range const/max-steps))
-      (Thread/sleep 100)
+      (Thread/sleep 300)
       (graphics/reset)))
 
 
