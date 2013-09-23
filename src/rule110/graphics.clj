@@ -1,7 +1,9 @@
 (ns rule110.graphics
   (:import (java.awt Color Graphics Dimension)
            (java.awt.image BufferedImage)
-           (javax.swing JPanel JFrame)))
+           (javax.swing JPanel JFrame)
+           (javax.imageio ImageIO)
+           (java.io File)))
 
 (set! *warn-on-reflection* true)
 
@@ -9,7 +11,7 @@
 (def dim-board   [100  250])
 (def dim-screen  [1000  750])
 (def dim-scale   (mapv / dim-screen dim-board))
-
+(def rule-name (atom ""))
 
 (def current-row (atom 0))
 (def board (atom []))
@@ -41,7 +43,11 @@
     (doseq [row (with-coords board)
             cell row]
       (render-cell background-graphics cell))
-    (.drawImage graphics img 0 0 nil)))
+    (.drawImage graphics img 0 0 nil))
+  (when (= 250 (count board))
+    (prn "writing image")
+    (ImageIO/write img "png" (File. (str "./rules/output_" @rule-name ".png")))
+    (Thread/sleep 200)))
 
 
 
@@ -62,4 +68,10 @@
   [grid]
   (swap! board conj grid)
   (.repaint panel)
+  (when (zero? (count @board))
+    (.setTitle frame @rule-name))
   grid)
+
+(defn reset-frame
+  []
+  (reset! board []))

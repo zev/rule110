@@ -30,17 +30,27 @@
 ;;                   [3 118] ; Syn Drum
 ;;                   [4 238]]) ; Tuned Drum
 
+;; (def instruments [[0 116] ; kalimba
+;;                   [1 116] ; steel drums
+;;                   [2 116] ; taiko
+;;                   [3 116] ; Syn Drum
+;;                   [4 238] ; Tuned Drum
+;;                   [5 116]
+;;                   [6 116]
+;;                   ])
+
+
 (def instruments [[0 116] ; kalimba
-                  [1 116] ; steel drums
-                  [2 116] ; taiko
-                  [3 116] ; Syn Drum
-                  [4 238] ; Tuned Drum
-                  [5 116]
-                  [6 116]
+                  [1 1] ; steel drums
+                  [2 32] ; taiko
+                  [3 203] ; Syn Drum
+                  [4 231] ; Tuned Drum
+                  [5 19]
+                  [6 14]
                   ])
 
 (def channels (delay (start)
-                     (let [chans (.getChannels ^javax.sound.midi.Synthesizer synth)]
+                     (let [chans (.getChannels ^Synthesizer synth)]
                        (doseq [[chan-num inst] instruments]
                          (set-instrument chans chan-num inst))
                        chans
@@ -84,6 +94,7 @@
 ;;                       6 8
 ;;                       7 4})
 
+#_(def max-channels #_(count instruments) 16)
 (def max-channels (count instruments))
 (def idx-channel-map (fn [n] n))
 
@@ -93,8 +104,9 @@
   (let [groups (quot (count grid) max-channels)]
     (map
      (fn [[a b c d :as rows] idx]
+       #_(prn rows " : " idx)
        (let [channel-number (idx-channel-map (mod idx max-channels))
-             osum (int (Math/pow (apply + rows) (inc idx)))
+             osum 2 #_(int (Math/pow (apply + rows) (inc idx)))
              sum (Integer/parseInt (apply str rows) 2)
              #_( mults (map #(int (Math/pow * %2 %2)) (partition max-channels)))
              note (mod sum 129)
