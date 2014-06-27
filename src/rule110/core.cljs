@@ -73,15 +73,16 @@
      (run-rule rule-num step-fn (random-grid const/grid-size 25)))
 
   ([rule-num step-fn grid]
-      (reset! canvas/rule-name (rule-and-grid-name rule-num grid))
-      (reduce (fn [s v] (-> s
-                           (step step-fn)
-                           canvas/draw-frame
-                           #_midi/play-grid))
-              grid
-              (range const/max-steps))
-      #_(Thread/sleep 300) ;; need to make rule or core async it
-      (canvas/reset)))
+     (reset! canvas/rule-name (rule-and-grid-name rule-num grid))
+     (canvas/draw-board)
+     (reduce (fn [s v] (-> s
+                          (step step-fn)
+                          canvas/draw-frame
+                          #_midi/play-grid))
+             grid
+             (range const/max-steps))
+     #_(Thread/sleep 300) ;; need to make rule or core async it
+     (canvas/reset)))
 
 
 (defn init

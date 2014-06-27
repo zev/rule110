@@ -18,10 +18,13 @@
 (def on-color "green")
 (def off-color "black")
 
-(defn with-coords [board]
-  (for [[row-idx row] (map-indexed vector board)]
-    (for [[col-idx val] (map-indexed vector row)]
-      [val col-idx row-idx])))
+(defn with-coords
+  ([board]
+      (for [[row-idx row] (map-indexed vector board)]
+        (with-coords row-idx row)))
+  ([row-idx row]
+     (for [[col-idx val] (map-indexed vector row)]
+          [val col-idx row-idx])))
 
 (defn render-cell [g cell]
   (let [[state xo yo] cell
@@ -32,13 +35,20 @@
     (.fillRect g x y x-scale y-scale)))
 
 
+(defn draw-board
+  []
+  (set! (.-fillStyle canvas) off-color)
+  (.fillRect canvas 0 0 (dim-screen 0) (dim-screen 1)))
+
 (defn render [graphics board]
-  (set! (.-fillStyle graphics) off-color)
-  (.fillRect graphics 0 0 (dim-screen 0) (dim-screen 1))
+  (draw-board)
   (doseq [row (seq (with-coords board))
           cell row]
     (render-cell graphics cell)))
 
+(defn render-row [graphics row-idx row]
+  (doseq [cell (seq (with-coords row-idx row))]
+    (render-cell graphics cell)))
 
 (defn draw-frame
   "Draw the state of the current automata's grid"
@@ -47,7 +57,7 @@
     "setup the title here or in the driver")
 
   (swap! board conj grid)
-  (render canvas @board)
+  (render-row canvas (count @board) grid)
   grid)
 
 (defn reset
