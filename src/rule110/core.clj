@@ -17,7 +17,6 @@
       n
       (str (apply str (mapv (constantly "0") (range l))) n))))
 
-
 (defn all-possible-rules
   "Return a list of rule number and step-fn's for all possible cellular automata
    in the domain of rule 110 i.e. 1 dimensional automaton"
@@ -86,19 +85,34 @@
                            (step step-fn)
                            #_draw-grid
                            graphics/draw-frame
-                           #_midi/play-grid))
+                           midi/play-grid))
               grid
               (range const/max-steps))
       (Thread/sleep 300)
       (graphics/reset)))
 
-
 (defn -main
   [& args]
-  (let [grid (random-grid const/grid-size 25)]
-    (prn "starting grid " grid)
-    (doseq [ [rule-num rule-map] (all-possible-rules)]
+  (loop [grid (random-grid const/grid-size 25)
+        action (or (first args) :all)
+        all-rules (all-possible-rules)
+        rules (if (= :all (keyword action))
+                all-rules
+                [(nth all-rules (Integer/parseInt action))])]
+    (prn "starting grid " grid " action " action)
+    (doseq [ [rule-num rule-map] rules]
       (prn "rule -num " rule-num " map " rule-map)
-      (run-rule rule-num rule-map grid)))
+      (run-rule rule-num rule-map grid))
+    (when (not (= :all (keyword action)))
+      (println "New rule:")
+      (let [naction (read-line)]
+        (println "Got it ")
+        (if (re-matches #"\d+" naction)
+          (println "Next rule " naction)
+          (recur grid
+                 naction
+                 all-rules
+                 [(nth all-rules (Integer/parseInt naction))])))))
+  (println "Done")
   (midi/stop)
   nil)
