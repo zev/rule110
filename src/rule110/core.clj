@@ -103,7 +103,7 @@
     (doseq [ [rule-num rule-map] rules]
       (prn "rule -num " rule-num " map " rule-map)
       (run-rule rule-num rule-map grid))
-    (when (not (= :all (keyword action)))
+    (when-not (= :all (keyword action))
       (println "New rule:")
       (let [naction (read-line)]
         (println "Got it ")
