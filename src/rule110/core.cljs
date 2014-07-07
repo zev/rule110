@@ -63,6 +63,26 @@
   [rule-num grid ]
   (str rule-num "-g" (.toString (js/parseInt (apply str grid) 2) 16)))
 
+(defn- end-rule
+  []
+   (canvas/reset))
+
+(defn- iterate-rule
+  "Run the rule then call self again in a timeout to allow the drawing
+   to show row by row."
+  [step-fn grid step-acc]
+
+  (if (< step-acc const/max-steps)
+    (let [ngrid (reduce (fn [s v] (-> s
+                                     (step step-fn)
+                                     canvas/draw-frame
+                                     #_midi/play-grid))
+                        grid [1])]
+      (js/setTimeout #(iterate-rule step-fn
+                                    ngrid
+                                    (inc step-acc))
+                     100))
+    (end-rule)))
 
 (defn run-rule
   "Runs a celular automata based on the passed step-fn passed
@@ -75,14 +95,17 @@
   ([rule-num step-fn grid]
      (reset! canvas/rule-name (rule-and-grid-name rule-num grid))
      (canvas/draw-board)
-     (reduce (fn [s v] (-> s
-                          (step step-fn)
-                          canvas/draw-frame
-                          #_midi/play-grid))
-             grid
-             (range const/max-steps))
-     #_(Thread/sleep 300) ;; need to make rule or core async it
-     (canvas/reset)))
+     (comment ;; This is the direct iteration that draws the whole image on call.
+       (reduce (fn [s v] (-> s
+                                   (step step-fn)
+                                   canvas/draw-frame
+                                   #_midi/play-grid))
+                      grid
+                      (range const/max-steps))
+              #_(Thread/sleep 300) ;; need to make rule or core async it
+              (canvas/reset))
+     (iterate-rule step-fn grid 0)
+     ))
 
 
 (defn init
