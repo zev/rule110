@@ -1,8 +1,10 @@
 (ns rule110.core
+  (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [rule110.constants :as const]
-            #_[rule110.midi :as midi]
+            [rule110.midi :as midi]
             [rule110.canvas :as canvas]
-            [domina :as dm]))
+            [domina :as dm]
+            [cljs.core.async :as async :refer [go <! timeout]]))
 
 
 ;; A list of all the possible states a cell and it's immediate
@@ -76,8 +78,9 @@
     (let [ngrid (reduce (fn [s v] (-> s
                                      (step step-fn)
                                      canvas/draw-frame
-                                     #_midi/play-grid))
+                                     midi/play-grid))
                         grid [1])]
+      (go (<! (timeout 100)))
       (js/setTimeout #(iterate-rule step-fn
                                     ngrid
                                     (inc step-acc))
@@ -95,20 +98,25 @@
   ([rule-num step-fn grid]
      (reset! canvas/rule-name (rule-and-grid-name rule-num grid))
      (canvas/draw-board)
-     (comment ;; This is the direct iteration that draws the whole image on call.
+
+     (comment
+       ;; This is the direct iteration that draws the whole image on call.
        (reduce (fn [s v] (-> s
-                                   (step step-fn)
-                                   canvas/draw-frame
-                                   #_midi/play-grid))
-                      grid
-                      (range const/max-steps))
-              #_(Thread/sleep 300) ;; need to make rule or core async it
-              (canvas/reset))
+                            (step step-fn)
+                            canvas/draw-frame
+                            midi/play-grid))
+               grid
+               (range const/max-steps))
+       (go (<! (timeout 100)))
+       #_(canvas/reset))
+
+     ;; even with the async timeout the above seems to only show the grid at the end.
+     ;; but now it appears that the midi is not in sync with the line draw
      (iterate-rule step-fn grid 0)
      ))
 
 
-(defn init
+(defn init-game
   [& args]
   (let [grid (random-grid const/grid-size 25)
         action (or (first args) :all)
@@ -122,8 +130,12 @@
       (run-rule rule-num rule-map grid)))
   ;; event handler to check for command to repeat
   (dm/log "Done")
-  #_(midi/stop)
+  (midi/silence)
   nil)
 
+
+(defn init
+  [& args]
+  (midi/init #(apply init-game args)))
 
 (set! (.-onload js/window) #(init "110"))
